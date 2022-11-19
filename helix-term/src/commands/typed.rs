@@ -1034,6 +1034,35 @@ fn reload(
     })
 }
 
+use std::process::Command;
+
+/// Make remedybg go to the current source location
+fn remedy(
+    cx: &mut compositor::Context,
+    _args: &[Cow<str>],
+    event: PromptEvent,
+) -> anyhow::Result<()> {
+    if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    
+    let (view, doc) = current!(cx.editor);
+    if doc.path().is_none() {
+        cx.editor.set_status("No file loaded");
+        return Ok(());
+    } else {
+        let text = doc.text().slice(..);
+        let line_number = doc.selection(view.id).primary().cursor_line(text) + 1;
+        let document_path = String::from(doc.path().unwrap().to_str().unwrap());
+
+        let new_status = format!("Remedy {}, {}", document_path, line_number);
+        cx.editor.set_status(new_status);
+        
+        let _output = Command::new("remedybg").args(["open-file", &document_path, &line_number.to_string()]).output().expect("Failed to spawn remedybg");
+    }
+    Ok(())
+}
+
 /// Update the [`Document`] if it has been modified.
 fn update(
     cx: &mut compositor::Context,
@@ -2042,6 +2071,13 @@ pub const TYPABLE_COMMAND_LIST: &[TypableCommand] = &[
             aliases: &[],
             doc: "Set encoding. Based on `https://encoding.spec.whatwg.org`.",
             fun: set_encoding,
+            completer: None,
+        },
+        TypableCommand {
+            name: "D",
+            aliases: &[],
+            doc: "Makes remedybg go to the current source location",
+            fun: remedy,
             completer: None,
         },
         TypableCommand {
