@@ -777,7 +777,7 @@ fn theme(
                     .editor
                     .theme_loader
                     .load(theme_name)
-                    .map_err(|err| anyhow::anyhow!("Could not load theme: {}", err))?;
+                    .with_context(|| "Theme does not exist")?;
                 if !(true_color || theme.is_16_color()) {
                     bail!("Unsupported theme: theme requires true color support");
                 }
@@ -1793,7 +1793,7 @@ fn pipe_impl(
     }
 
     ensure!(!args.is_empty(), "Shell command required");
-    shell(cx, &args.join(" "), behavior);
+    shell(cx, &args.join(" "), &ShellBehavior::Replace);
     Ok(())
 }
 
